@@ -1,7 +1,9 @@
 
 from typing import *
-from enum import Enum
 import random
+import enum
+from enum import Enum
+
 
 # Please see https://namu.wiki/w/%ED%99%94%ED%88%AC/%ED%8C%A8
 # Following cards are defined in the same order as appeared in the above link
@@ -72,79 +74,85 @@ class CardCode(Enum):
     JokerDouble1=49
     JokerDouble2=50
     JokerTriple=51
-    Bomb=52
+
 
 class Card(object):
-    def __init__(self, code):
-        if code < 1 or code > 52:
+    def __init__(self, code:CardCode):
+        if not code in CardCode:
             raise Exception('Illegal code number')
         self._code = code
 
     @property
     def month(self) -> int:
-        if self._code >= 1 and self._code <= 48:
-            return int((self._code - 1) / 4) + 1
-        return -1
+        code = self._code.value
+        if code >= 1 and code <= 48:
+            return int((code - 1) / 4) + 1
+        return None
 
     @property
     def is_light(self) -> bool:
-        return  self._code in [Card.JanLight, Card.MarLight, Card.AugLight, Card.NovLight, Card.DecLight]
+        return  self._code in [CardCode.JanLight, CardCode.MarLight, CardCode.AugLight, CardCode.NovLight, CardCode.DecLight]
 
     @property
     def is_sublight(self) -> bool:
-        return self._code == Card.DecLight
+        return self._code == CardCode.DecLight
 
     @property
     def is_bird(self) -> bool:
-        return self._code in [Card.FebBird, Card.AprBird, Card.AugBird]
+        return self._code in [CardCode.FebBird, CardCode.AprBird, CardCode.AugBird]
 
     @property
     def is_animal(self) -> bool:
-        return self._code in [Card.FebBird, Card.AprBird, Card.MayBridge, Card.JunButterfly, Card.JulPig,
-                              Card.AugBird, Card.SepFlask, Card.OctDeer, Card.DecBird]
+        return self._code in [CardCode.FebBird, CardCode.AprBird, CardCode.MayBridge, CardCode.JunButterfly, CardCode.JulPig,
+                              CardCode.AugBird, CardCode.SepFlask, CardCode.OctDeer, CardCode.DecBird]
     @property
     def is_red_flag(self) -> bool:
-        return self._code in [Card.FebRedFlag, Card.MarRedFlag, Card.JanRedFlag]
+        return self._code in [CardCode.FebRedFlag, CardCode.MarRedFlag, CardCode.JanRedFlag]
 
     @property
     def is_blue_flag(self) -> bool:
-        return self._code in [Card.JunBlueFlag, Card.SepBlueFlag, Card.OctBlueFlag]
+        return self._code in [CardCode.JunBlueFlag, CardCode.SepBlueFlag, CardCode.OctBlueFlag]
 
     @property
     def is_plane_flag(self) -> bool:
-        return self._code in [Card.AprFlag, Card.MayFlag, Card.JulFlag, Card.DecFlag]
+        return self._code in [CardCode.AprFlag, CardCode.MayFlag, CardCode.JulFlag, CardCode.DecFlag]
 
     @property
     def is_flag(self) -> bool:
-        return self._code in [Card.FebRedFlag, Card.MarRedFlag, Card.JanRedFlag,
-                              Card.JunBlueFlag, Card.SepBlueFlag, Card.OctBlueFlag,
-                              Card.AprFlag, Card.MayFlag, Card.JulFlag, Card.DecFlag]
+        return self._code in [CardCode.FebRedFlag, CardCode.MarRedFlag, CardCode.JanRedFlag,
+                              CardCode.JunBlueFlag, CardCode.SepBlueFlag, CardCode.OctBlueFlag,
+                              CardCode.AprFlag, CardCode.MayFlag, CardCode.JulFlag, CardCode.DecFlag]
 
     @property
     def pi_cnt(self) -> int:
-        if self._code in [Card.Jan1, Card.Jan2, Card.Feb1, Card.Feb2, Card.Mar1, Card.Mar2,
-                              Card.Apr1, Card.Apr2, Card.May1, Card.May2, Card.Jun1, Card.Jun2,
-                              Card.Jul1, Card.Jul2, Card.Aug1, Card.Aug2, Card.Sep1, Card.Sep2,
-                              Card.Oct1, Card.Oct2, Card.Nov1, Card.Nov2]:
+        if self._code in [CardCode.Jan1, CardCode.Jan2, CardCode.Feb1, CardCode.Feb2, CardCode.Mar1, CardCode.Mar2,
+                              CardCode.Apr1, CardCode.Apr2, CardCode.May1, CardCode.May2, CardCode.Jun1, CardCode.Jun2,
+                              CardCode.Jul1, CardCode.Jul2, CardCode.Aug1, CardCode.Aug2, CardCode.Sep1, CardCode.Sep2,
+                              CardCode.Oct1, CardCode.Oct2, CardCode.Nov1, CardCode.Nov2]:
             return 1
 
-        if self._code in [Card.DecDoor, Card.NovDouble, Card.JokerDouble1, Card.JokerDouble2]:
+        if self._code in [CardCode.DecDoor, CardCode.NovDouble, CardCode.JokerDouble1, CardCode.JokerDouble2]:
             return 2
 
-        if self._code == Card.JokerTriple: return 3
+        if self._code == CardCode.JokerTriple: return 3
         return 0
 
     @property
     def is_bonus(self) -> bool:
-        return self._code in [Card.JokerDouble1, Card.JokerDouble2, Card.JokerTriple]
+        return self._code in [CardCode.JokerDouble1, CardCode.JokerDouble2, CardCode.JokerTriple]
 
-    def __eq__(self, other:'Card'): return self.value == other.value
-    def __gt__(self, other:'Card'): return self > other._code
-    def __lt__(self, other:'Card'): return self < other._code
-    def __hash__(self): return self._code
+    def __eq__(self, other:'Card'): return self._code.value == other._code.value
+    def __gt__(self, other:'Card'): return self > other._code.value
+    def __lt__(self, other:'Card'): return self < other._code.value
+    def __hash__(self): return self._code.value
+    def __str__(self):
+        return '[' + self._code.name + ']'
 
 CardSet = Set[Card]
-
+def _cardset_to_str(cardset:CardSet):
+    if len(cardset) == 0: return '-'
+    res = ' '.join([str(c) for c in cardset])
+    return res
 
 
 class Player(object):
@@ -162,10 +170,16 @@ class Player(object):
         self._consec_bbuck_cnt = 0
         self._president_cnt = 0
 
-    def dump(self):
-        print("Go:{0}  Shake:{1}  Bomb:{2}  BBuck:{3}  BombCard:{4}"
-              .format(self._go_cnt, self._shake_cnt, self._bbuck_cnt, self._bbuck_cnt, self._bomb_card_cnt))
-        print("Hand: [" + "" + "]")
+    def dump_str(self, indent=0):
+        blank = ''
+        if indent > 0: blank = ' ' * indent
+        res  = blank + ("Go:{0}  Shake:{1}  Bomb:{2}  BBuck:{3}  BombCard:{4} Kukjin->TwoPi:{5}\n"
+              .format(self._go_cnt, self._shake_cnt, self._bbuck_cnt, self._bbuck_cnt, self._bomb_card_cnt,
+                      self._kukjin_as_doublepi))
+        res += blank + 'Hand    : ' + _cardset_to_str(self._hand) + '\n'
+        res += blank + 'Acquired: ' + _cardset_to_str(self._acquired) + '\n'
+        res += blank + 'Shaked  : ' + _cardset_to_str(self._shaked) + '\n'
+        return res
 
     def claim_president(self, month) -> bool:
         if month in self.president_months():
@@ -224,14 +238,11 @@ class Player(object):
         self._go_cnt += 1
         return True
 
-    def throw(self, c:Card) -> bool:
-        if c._code == c.Bomb:
+    def throw(self, c:Union[None, Card]) -> bool:
+        if c._code is None:
             if self._bomb_card_cnt > 0:
                 self._bomb_card_cnt -= 1
                 return True
-            if self._bomb_card_cnt == 0:
-                if Card(Card.Bomb) in self._hand:
-                    self._hand.remove(Card(Card.Bomb))
             return False
         else:
             if not c in self._hand: return False
@@ -240,8 +251,7 @@ class Player(object):
             return True
 
     def acquire_bomb(self, bomb_cnt):
-        self._bomb_card_cnt = bomb_cnt
-        self._hand.add(Card(Card.Bomb))
+        self._bomb_card_cnt += bomb_cnt
 
     def score(self, amplifier = True) -> int:
         if self._president_cnt > 0: return 7
@@ -260,7 +270,7 @@ class Player(object):
 
         for c in self._acquired: #type: Card
             sublight       |= c.is_sublight
-            has_kukjin     |= (c._code == Card.SepFlask)
+            has_kukjin     |= (c._code == CardCode.SepFlask)
             pi_cnt         += c.pi_cnt
             red_flag_cnt   += 1 if c.is_red_flag else 0
             blue_flag_cnt  += 1 if c.is_blue_flag else 0
@@ -319,7 +329,7 @@ class Player(object):
             cnt += 1 if c.is_light else 0
         return cnt == 0
 
-class GameState(Enum):
+class GameState():
     ClaimPresident = 1
 
 
@@ -360,7 +370,7 @@ class Game(object):
             for _ in range(num_players):
                 self._players.append(Player())
 
-            for i in range(1, Card.Bomb):
+            for i in CardCode:
                 self._deck.append(Card(i))
 
             random.shuffle(self._deck)
@@ -372,9 +382,9 @@ class Game(object):
             self._board.update(board)
 
             for c in self._board: #type: Card
-                if c.is_bonus:
-                    self._board.remove(c)
-                    self._players[0]._acquired(c)
+                if c.is_bonus: self._players[0]._acquired.add(c)
+
+            self._board = set([c for c in self._board if not c.is_bonus])
 
             # check president for the cards on the board
             cnt = dict()
@@ -387,4 +397,21 @@ class Game(object):
                 if cnt[k] == 4:
                     need_init = True
                     break
+
+    def dump_str(self, indent:int=4):
+        res  = 'Turn #{0}\n'.format(self._turn_cnt)
+        res += 'Board: {0}\n'.format(_cardset_to_str(self._board))
+        res += 'Deck : {0}\n'.format(_cardset_to_str(self._deck))
+        for pidx, p in enumerate(self._players):
+            res += 'Player #{0} ====\n'.format(pidx)
+            res += p.dump_str(indent=indent)
+
+        return res
+
+
+class TestConsole(object):
+    def __init__(self, num_players=2):
+        self._game = Game(num_players)
+
+console = TestConsole(2)
 
