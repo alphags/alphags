@@ -7,67 +7,68 @@ from enum import Enum
 
 # Please see https://namu.wiki/w/%ED%99%94%ED%88%AC/%ED%8C%A8
 # Following cards are defined in the same order as appeared in the above link
+# For the rules and terminologies: please see https://www.pagat.com/fishing/gostop.html
 
 # card constants
 class CardCode(Enum):
-    JanLight=1
-    JanRedFlag=2
+    JanBright=1
+    JanRedRibbon=2
     Jan1=3
     Jan2=4
 
     FebBird=5
-    FebRedFlag=6
+    FebRedRibbon=6
     Feb1=7
     Feb2=8
 
-    MarLight=9
-    MarRedFlag=10
+    MarBright=9
+    MarRedRibbon=10
     Mar1=11
     Mar2=12
 
     AprBird=13
-    AprFlag=14
+    AprRibbon=14
     Apr1=15
     Apr2=16
 
     MayBridge=17
-    MayFlag=18
+    MayRibbon=18
     May1=19
     May2=20
 
     JunButterfly=21
-    JunBlueFlag=22
+    JunBlueRibbon=22
     Jun1=23
     Jun2=24
 
     JulPig=25
-    JulFlag=26
+    JulRibbon=26
     Jul1=27
     Jul2=28
 
-    AugLight=29
+    AugBright=29
     AugBird=30
     Aug1=31
     Aug2=32
 
     SepFlask=33
-    SepBlueFlag=34
+    SepBlueRibbon=34
     Sep1=35
     Sep2=36
 
     OctDeer=37
-    OctBlueFlag=38
+    OctBlueRibbon=38
     Oct1=39
     Oct2=40
 
-    NovLight=41
+    NovBright=41
     NovDouble=42
     Nov1=43
     Nov2=44
 
-    DecLight=45
+    DecBright=45
     DecBird=46
-    DecFlag=47
+    DecRibbon=47
     DecDoor=48
 
 
@@ -90,12 +91,12 @@ class Card(object):
         return None
 
     @property
-    def is_light(self) -> bool:
-        return  self._code in [CardCode.JanLight, CardCode.MarLight, CardCode.AugLight, CardCode.NovLight, CardCode.DecLight]
+    def is_bright(self) -> bool:
+        return  self._code in [CardCode.JanBright, CardCode.MarBright, CardCode.AugBright, CardCode.NovBright, CardCode.DecBright]
 
     @property
-    def is_sublight(self) -> bool:
-        return self._code == CardCode.DecLight
+    def is_subbright(self) -> bool:
+        return self._code == CardCode.DecBright
 
     @property
     def is_bird(self) -> bool:
@@ -106,22 +107,22 @@ class Card(object):
         return self._code in [CardCode.FebBird, CardCode.AprBird, CardCode.MayBridge, CardCode.JunButterfly, CardCode.JulPig,
                               CardCode.AugBird, CardCode.SepFlask, CardCode.OctDeer, CardCode.DecBird]
     @property
-    def is_red_flag(self) -> bool:
-        return self._code in [CardCode.FebRedFlag, CardCode.MarRedFlag, CardCode.JanRedFlag]
+    def is_red_ribbon(self) -> bool:
+        return self._code in [CardCode.FebRedRibbon, CardCode.MarRedRibbon, CardCode.JanRedRibbon]
 
     @property
-    def is_blue_flag(self) -> bool:
-        return self._code in [CardCode.JunBlueFlag, CardCode.SepBlueFlag, CardCode.OctBlueFlag]
+    def is_blue_ribbon(self) -> bool:
+        return self._code in [CardCode.JunBlueRibbon, CardCode.SepBlueRibbon, CardCode.OctBlueRibbon]
 
     @property
-    def is_plane_flag(self) -> bool:
-        return self._code in [CardCode.AprFlag, CardCode.MayFlag, CardCode.JulFlag, CardCode.DecFlag]
+    def is_plain_ribbon(self) -> bool:
+        return self._code in [CardCode.AprRibbon, CardCode.MayRibbon, CardCode.JulRibbon, CardCode.DecRibbon]
 
     @property
-    def is_flag(self) -> bool:
-        return self._code in [CardCode.FebRedFlag, CardCode.MarRedFlag, CardCode.JanRedFlag,
-                              CardCode.JunBlueFlag, CardCode.SepBlueFlag, CardCode.OctBlueFlag,
-                              CardCode.AprFlag, CardCode.MayFlag, CardCode.JulFlag, CardCode.DecFlag]
+    def is_ribbon(self) -> bool:
+        return self._code in [CardCode.FebRedRibbon, CardCode.MarRedRibbon, CardCode.JanRedRibbon,
+                              CardCode.JunBlueRibbon, CardCode.SepBlueRibbon, CardCode.OctBlueRibbon,
+                              CardCode.AprRibbon, CardCode.MayRibbon, CardCode.JulRibbon, CardCode.DecRibbon]
 
     @property
     def pi_cnt(self) -> int:
@@ -255,31 +256,31 @@ class Player(object):
 
     def score(self, amplifier = True) -> int:
         if self._president_cnt > 0: return 7
-        light_cnt = 0
+        bright_cnt = 0
         pi_cnt = 0
-        sublight = False
+        subbright = False
         has_kukjin = False
 
-        flag_cnt = 0
-        red_flag_cnt = 0
-        blue_flag_cnt = 0
-        plane_flag_cnt = 0
+        ribbon_cnt = 0
+        red_ribbon_cnt = 0
+        blue_ribbon_cnt = 0
+        plain_ribbon_cnt = 0
 
         animal_cnt = 0
         bird_cnt = 0
 
         for c in self._acquired: #type: Card
-            sublight       |= c.is_sublight
-            has_kukjin     |= (c._code == CardCode.SepFlask)
-            pi_cnt         += c.pi_cnt
-            red_flag_cnt   += 1 if c.is_red_flag else 0
-            blue_flag_cnt  += 1 if c.is_blue_flag else 0
-            plane_flag_cnt += 1 if c.is_plane_flag else 0
-            flag_cnt       += 1 if c.is_flag else 0
-            animal_cnt     += 1 if c.is_animal else 0
-            bird_cnt       += 1 if c.is_bird else 0
-            light_cnt      += 1 if c.is_light else 0
-            pi_cnt         += c.pi_cnt
+            subbright        |= c.is_subbright
+            has_kukjin       |= (c._code == CardCode.SepFlask)
+            pi_cnt           += c.pi_cnt
+            red_ribbon_cnt   += 1 if c.is_red_ribbon else 0
+            blue_ribbon_cnt  += 1 if c.is_blue_ribbon else 0
+            plain_ribbon_cnt += 1 if c.is_plain_ribbon else 0
+            ribbon_cnt       += 1 if c.is_ribbon else 0
+            animal_cnt       += 1 if c.is_animal else 0
+            bird_cnt         += 1 if c.is_bird else 0
+            bright_cnt       += 1 if c.is_bright else 0
+            pi_cnt           += c.pi_cnt
 
         res = 0
 
@@ -291,16 +292,16 @@ class Player(object):
         if animal_cnt >= 5 and animal_cnt <= 7: res += animal_cnt - 4
         elif animal_cnt > 7: res += 3
         if bird_cnt == 3: res += 5
-        if flag_cnt >= 5: res += flag_cnt - 4
+        if ribbon_cnt >= 5: res += ribbon_cnt - 4
 
-        if light_cnt == 3 and sublight: res += 2
-        elif light_cnt == 3 and not sublight: res += 3
-        elif light_cnt == 4: res += 4
-        elif light_cnt == 5: res += 15
+        if bright_cnt == 3 and subbright: res += 2
+        elif bright_cnt == 3 and not subbright: res += 3
+        elif bright_cnt == 4: res += 4
+        elif bright_cnt == 5: res += 15
 
-        if red_flag_cnt == 3: res += 3
-        if blue_flag_cnt == 3: res += 3
-        if plane_flag_cnt >= 3: res += 3
+        if red_ribbon_cnt == 3: res += 3
+        if blue_ribbon_cnt == 3: res += 3
+        if plain_ribbon_cnt >= 3: res += 3
 
         if amplifier:
             if self._go_cnt == 1: res += 1
@@ -326,19 +327,29 @@ class Player(object):
     def gwangbakable(self) -> bool:
         cnt = 0
         for c in list(self._acquired): #type: Card
-            cnt += 1 if c.is_light else 0
+            cnt += 1 if c.is_bright else 0
         return cnt == 0
 
-class GameState():
-    ClaimPresident = 1
+class GameState(Enum):
+    Initialized = 0
+    AskPresident = 1
+    AnsweredPresident = 2
+    AskCardToThrow = 3
+
+    AnsweredCardToThrow = 4
+    AskCardToCapture = 5
+    AnsweredCardToCapture = 6
 
 
 class Game(object):
-    _turn_cnt = 0
+    _round_cnt = 0
     _players = None
-    _deck = None
+    _stock = None
     _board = None
-    _question = None
+    _state = None
+    _round = None
+    _turn = None
+    _answer = None
 
     @property
     def num_player(self):
@@ -350,6 +361,10 @@ class Game(object):
         elif self.num_player == 3: return 3
 
     def __init__(self, num_players:int=2):
+        self._state = GameState.Initialized
+        self._turn = 0
+        self._answer = None
+
         if num_players == 2:
             num_hand = 10
             num_board = 8
@@ -359,34 +374,36 @@ class Game(object):
         else: raise NotImplemented
 
         need_init = True
-        self._turn_cnt = 0
+        self._round_cnt = 0
 
         while need_init:
             need_init = False
             self._players = list()
-            self._deck = list()
+            self._stock = list()
             self._board = set()
 
             for _ in range(num_players):
                 self._players.append(Player())
 
             for i in CardCode:
-                self._deck.append(Card(i))
+                self._stock.append(Card(i))
 
-            random.shuffle(self._deck)
+            # dealing cards
+            random.shuffle(self._stock)
             for i in range(self.num_player):
-                hand, self._deck = self._deck[:num_hand], self._deck[num_hand:]
+                hand, self._stock = self._stock[:num_hand], self._stock[num_hand:]
                 self._players[i]._hand.update(hand)
 
-            board, self._deck = self._deck[:num_board], self._deck[num_board:]
+            board, self._stock = self._stock[:num_board], self._stock[num_board:]
             self._board.update(board)
 
+            # the 1st player get the bonus cards on the board 
             for c in self._board: #type: Card
                 if c.is_bonus: self._players[0]._acquired.add(c)
-
             self._board = set([c for c in self._board if not c.is_bonus])
 
-            # check president for the cards on the board
+
+            # if 'president' occured on the board, we re-initialize the whole game.
             cnt = dict()
             for c in self._board: #type:Card
                 m = c.month
@@ -396,12 +413,62 @@ class Game(object):
             for k in cnt.keys():
                 if cnt[k] == 4:
                     need_init = True
-                    break
+
+        self.i_deal()
+        return
+
+    def _deal(self):
+        if self._state in [GameState.Initialized, GameState.AnsweredPresident]:
+            while self._turn < len(self._players):
+                months = self._players[self._turn].president_months()
+                if len(months) > 0: return
+                self._turn += 1
+
+            self._turn = 0
+            self._state = GameState.AskCardToThrow
+            return
+        elif self._state == GameState.AnsweredCardToThrow:
+            if self._answer is None: return
+
+
+    def action_reqfields(self):
+        if self._state == GameState.AskPresident:
+            return ['card']
+        elif self._state == GameState.AskCardToThrow:
+            return ['card', 'shake_or_bomb']
+
+
+    
+    def action(self, ans:dict) -> bool:
+        required = self.answer_reqfields()
+        for key in required:
+            if not key in ans: return False
+        self._answer = ans
+
+        if self._state == GameState.AskPresident:
+            self._state = GameState.AnsweredPresident
+
+        self._deal()
+        return True
+
+
+    @property
+    def state(self):
+        return self._state
+
+    @property
+    def turn(self):
+        return self._turn
+
+    @property
+    def turn_as_player(self):
+        return self._players[self._turn]
+
 
     def dump_str(self, indent:int=4):
-        res  = 'Turn #{0}\n'.format(self._turn_cnt)
+        res  = 'Round #{0}\n'.format(self._round_cnt)
         res += 'Board: {0}\n'.format(_cardset_to_str(self._board))
-        res += 'Deck : {0}\n'.format(_cardset_to_str(self._deck))
+        res += 'Stock: {0}\n'.format(_cardset_to_str(self._stock))
         for pidx, p in enumerate(self._players):
             res += 'Player #{0} ====\n'.format(pidx)
             res += p.dump_str(indent=indent)
