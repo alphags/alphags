@@ -171,6 +171,9 @@ class Player(object):
         self._consec_bbuck_cnt = 0
         self._president_cnt = 0
 
+    def has(self, card:Card)->bool:
+        return card in self._hand
+
     def dump_str(self, indent=0):
         blank = ''
         if indent > 0: blank = ' ' * indent
@@ -182,11 +185,16 @@ class Player(object):
         res += blank + 'Shaked  : ' + _cardset_to_str(self._shaked) + '\n'
         return res
 
-    def claim_president(self, month) -> bool:
-        if month in self.president_months():
-            self._president_cnt += 1
-            return True
-        return False
+    def shakable_months(self) -> List[int]:
+        cnt = dict()
+        for c in self._hand: #type:Card
+            m = c.month
+            cnt[m] = cnt.get(m, 0) + 1
+
+        res = []
+        for k in cnt.keys():
+            if cnt[k] == 3: res.append(m)
+        return res
 
     def can_say_go(self) -> bool:
         cur_score = self.score(amplifier=False)
@@ -202,57 +210,6 @@ class Player(object):
         for k in cnt.keys():
             if cnt[k] == 4: res.append(m)
         return res
-
-    def remove_pi(self) -> Union[Card, None]:
-        pi = None
-        pi_cnt = 0
-        for c in self._acquired: #type: Card
-            if pi_cnt == 0 or c.pi_cnt < pi_cnt:
-                pi = c
-                pi_cnt = c.pi_cnt
-        if pi_cnt > 0: self._acquired.remove(pi)
-        return pi
-
-    def shakable_months(self) -> List[int]:
-        cnt = dict()
-        for c in self._hand: #type:Card
-            m = c.month
-            cnt[m] = cnt.get(m, 0) + 1
-
-        res = []
-        for k in cnt.keys():
-            if cnt[k] == 3: res.append(m)
-        return res
-
-    def shake(self, c:Card) -> bool:
-        m = c.month
-        shakables = self.shakable_months()
-        if m in shakables:
-            for cc in self._hand: #type: Card
-                if cc.month == m: self._shaked.insert(cc)
-            return True
-        return False
-
-    def claim_go(self) -> bool:
-        if not self.can_say_go(): return False
-        self._latest_go_score = self.score(amplifier=False)
-        self._go_cnt += 1
-        return True
-
-    def throw(self, c:Union[None, Card]) -> bool:
-        if c._code is None:
-            if self._bomb_card_cnt > 0:
-                self._bomb_card_cnt -= 1
-                return True
-            return False
-        else:
-            if not c in self._hand: return False
-            self._hand.remove(c)
-            if c in self._shaked: self._shaked.remove(c)
-            return True
-
-    def acquire_bomb(self, bomb_cnt):
-        self._bomb_card_cnt += bomb_cnt
 
     def score(self, amplifier = True) -> int:
         if self._president_cnt > 0: return 7
@@ -315,6 +272,19 @@ class Player(object):
 
         return res
 
+
+    def by_month(self, set_name:str, month:int) -> Set[Card]:
+        res = set()
+        if   set_name == 'hand': used_set = self._hand
+        elif set_name == 'acquired': used_set = self._acquired
+        elif set_name == 'shaked': used_set = self._shaked
+
+        for c in used_set: #type: Card
+            if c.month == month: res.add(c)
+
+        return res
+
+
     @property
     def pibakable(self) -> bool:
         cnt = 0
@@ -330,6 +300,61 @@ class Player(object):
             cnt += 1 if c.is_bright else 0
         return cnt == 0
 
+    @property
+    def bomb_cnt(self) -> int:
+        return self._bomb_cnt
+    
+    ## Fuctions, whose names start with an underscore, should not be called by the user
+    def _claim_president(self) -> bool:
+        if len(self.president_months()) > 0:
+            self._president_cnt += 1
+            return True
+        return False
+
+    def _remove_pi(self) -> Union[Card, None]:
+        pi = None
+        pi_cnt = 0
+        for c in self._acquired: #type: Card
+            if pi_cnt == 0 or c.pi_cnt < pi_cnt:
+                pi = c
+                pi_cnt = c.pi_cnt
+        if pi_cnt > 0: self._acquired.remove(pi)
+        return pi
+
+    def _shake(self, c:Card) -> bool:
+        m = c.month
+        shakables = self.shakable_months()
+        if m in shakables:
+            for cc in self._hand: #type: Card
+                if cc.month == m: self._shaked.insert(cc)
+            return True
+        return False
+
+    def _claim_go(self) -> bool:
+        if not self.can_say_go(): return False
+        self._latest_go_score = self.score(amplifier=False)
+        self._go_cnt += 1
+        return True
+
+    def _throw(self, c:Union[None, Card]) -> bool:
+        if c._code is None:
+            if self._bomb_card_cnt > 0:
+                self._bomb_card_cnt -= 1
+                return True
+            return False
+        else:
+            if not c in self._hand: return False
+            self._hand.remove(c)
+            if c in self._shaked: self._shaked.remove(c)
+            return True
+
+    def _acquire_bomb(self, bomb_cnt):
+        self._bomb_card_cnt += bomb_cnt
+
+    def _get(self, cards:Set[Card]):
+        self._acquired.update(cards)
+
+
 class GameState(Enum):
     Initialized = 0
     AskPresident = 1
@@ -339,6 +364,51 @@ class GameState(Enum):
     AnsweredCardToThrow = 4
     AskCardToCapture = 5
     AnsweredCardToCapture = 6
+
+    Draw = 254
+    Done = 255
+
+class Board(object):
+    _cards = None
+    _bbuck_player = None
+
+    def __init__(self, cards: List[Card]):
+        self._cards = dict()
+        self._bbuck_player = dict()
+
+        for i in range(1, 13):
+            self._cards[i] = set()
+            self._bbuck_player[i] = None
+
+        for card in cards:
+            month = card.month
+            if not (1 <= month and month <= 12) : continue
+            self._cards[card.month].add(card)
+            
+    def by_month(self, month:int) -> Set[Card]:
+        if month < 1 or month > 12: return set()
+        return self._cards[month]
+
+    def as_set(self) -> Set[Card]:
+        res = set()
+        for key in self._cards.keys():
+            res.update(self._cards[key])
+        return res
+
+    def count(self) -> int:
+        res = 0
+        for key in self._cards.keys():
+            res += len(self._cards[key])
+        return res
+
+    def whose_bbuck(self, month:int) -> Union[None, int]:
+        if not month in self._bbuck_player: return None
+        return self._bbuck_player[month]
+
+    def _set_bbuck(self, player_idx:Union[None, int], month:int) -> bool:
+        if month < 1 or month > 12: return False
+        self._bbuck_player[month] = player_idx
+        return True
 
 
 class Game(object):
@@ -350,6 +420,7 @@ class Game(object):
     _round = None
     _turn = None
     _answer = None
+    _winner = None
 
     @property
     def num_player(self):
@@ -380,7 +451,7 @@ class Game(object):
             need_init = False
             self._players = list()
             self._stock = list()
-            self._board = set()
+            self._board = None
 
             for _ in range(num_players):
                 self._players.append(Player())
@@ -400,12 +471,12 @@ class Game(object):
             # the 1st player get the bonus cards on the board 
             for c in self._board: #type: Card
                 if c.is_bonus: self._players[0]._acquired.add(c)
-            self._board = set([c for c in self._board if not c.is_bonus])
+            self._board = Board(set([c for c in self._board if not c.is_bonus]))
 
 
             # if 'president' occured on the board, we re-initialize the whole game.
             cnt = dict()
-            for c in self._board: #type:Card
+            for c in self._board.as_set(): #type:Card
                 m = c.month
                 cnt[m] = cnt.get(m, 0) + 1
 
@@ -413,44 +484,154 @@ class Game(object):
             for k in cnt.keys():
                 if cnt[k] == 4:
                     need_init = True
+                    break
 
-        self.i_deal()
+        self._deal()
         return
 
+    def winner(self):
+        if self._state != GameState.Done: return None
+        if self._state == GameState.Draw: return None
+        return self._winner
+
     def _deal(self):
+        cur_player = self.turn_player()
+
         if self._state in [GameState.Initialized, GameState.AnsweredPresident]:
             while self._turn < len(self._players):
-                months = self._players[self._turn].president_months()
-                if len(months) > 0: return
+                months = cur_player.president_months()
+                if len(months) > 0:
+                    self._state = GameState.AskPresident
+                    return
                 self._turn += 1
 
             self._turn = 0
             self._state = GameState.AskCardToThrow
             return
+        
         elif self._state == GameState.AnsweredCardToThrow:
-            if self._answer is None: return
+            hand_card = self._answer['card']
+            shake = self._answer['shake_or_bomb']
+
+            throw_res = cur_player._throw(hand_card)
+            assert(throw_res)
+
+            if hand_card.is_special: 
+                cur_player._get(set([hand_card]))
+                for p in self._players:
+                    res = p._remove_pi()
+                    if res is not None:
+                        cur_player._get(set([res]))
+                self._state = GameState.AskCardToThrow
+                return
+
+            if len(self._stock) == 0:
+                self._state = GameState.Done
+                return 
+
+            stock_cards = []
+            while True:
+                stock_card = self._stock.pop(0)
+                stock_cards.append(stock_card)
+                if not stock_card.is_bonus: break
+            
+            hand_month = None
+            stock_month = None
+            if not hand_card is None: hand_month = hand_card.month
+            for stock_card in stock_cards:
+                stock_month = stock_card.month
+                if 1 <= stock_card_month and stock_card_month <= 12: break
+
+            hand_cnt = 0 if hand_month is None else len(self._board.by_month(hand_month))
+            stock_cnt = 0 if stock_month is None else len(self._board.by_month(stock_month))
+
+            gather_pi_from_others = 0
+
+            if hand_month is None:
+                #used a bomb card
+                if   stock_cnt == 0:
+                    pass # wasted
+                elif stock_cnt == 1:
+                    pass # acquired
+                elif stock_cnt == 2:
+                    pass # choose what to acquire
+                elif stock_cnt == 3:
+                    pass # resolve bbuck
+            else:
+                #used a normal card
+                if shake:
+                    if hand_cnt == 0:
+                        pass # shaked
+                    else:
+                        pass # bomb
+                else:
+                    if hand_month == stock_month:
+                        if hand_cnt == 0:
+                            pass # jjock
+                        elif hand_cnt == 1:
+                            pass # bbuck
+                        elif hand_cnt == 2:
+                            pass # dda dack
+                    else:
+                        # TODO: what do we have to do when hand_cnt == 2 and stock_cnt == 2?
+                        if   hand_cnt == 0:
+                            pass # wasted
+                        elif hand_cnt == 1:
+                            pass # acquired
+                        elif hand_cnt == 2:
+                            pass # choose what to acquire
+                        elif hand_cnt == 3:
+                            pass # resolve bbuck
+
+                        if   stock_cnt == 0:
+                            pass # wasted
+                        elif stock_cnt == 1:
+                            pass # acquired
+                        elif stock_cnt == 2:
+                            pass # choose what to acquire
+                        elif stock_cnt == 3:
+                            pass # resolve bbuck
 
 
     def action_reqfields(self):
         if self._state == GameState.AskPresident:
-            return ['card']
+            return ['go']
         elif self._state == GameState.AskCardToThrow:
             return ['card', 'shake_or_bomb']
-
-
     
+    # for a valid action, this function returns true. if not, it returns false
     def action(self, ans:dict) -> bool:
         required = self.answer_reqfields()
+        cur_player = self.turn_player()
         for key in required:
             if not key in ans: return False
         self._answer = ans
 
         if self._state == GameState.AskPresident:
+            if not self._answer['go']:
+                cur_player._claim_president()
+                self._state = GameState.Done
+                self._winner = self._turn
+                return True 
             self._state = GameState.AnsweredPresident
+        elif self._state == GameState.AskCardToThrow:
+            hand_card = ans['card']
+            shake = ans['shake_or_bomb']
+            if hand_card is None:
+                if cur_player.bomb_cnt < 1: return False
+            else:
+                if not cur_player.has(hand_card): return False
+                if shake:
+                    shakable_months = cur_player.shakable_months()
+                    hand_month = hand_card.month
+                    if not hand_month in shakable_months:
+                        board_cnt = len(self._board.by_month(hand_month))
+                        hand_cnt = cur_player.by_month('hand', hand_month)
+                        if board_cnt + hand_cnt < 4: return False
+            self._state = GameState.AnsweredCardToThrow
 
         self._deal()
         return True
-
 
     @property
     def state(self):
@@ -461,9 +642,8 @@ class Game(object):
         return self._turn
 
     @property
-    def turn_as_player(self):
+    def turn_player(self):
         return self._players[self._turn]
-
 
     def dump_str(self, indent:int=4):
         res  = 'Round #{0}\n'.format(self._round_cnt)
